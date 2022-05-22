@@ -275,7 +275,6 @@ client.on('interactionCreate', async (interaction) => {
                     newPlayer.getVol(),
                     //The next three numbers are for set wins, set losses and win rate- its just 0 because no games are played yet
                     '0',
-                    '0',
                     '0'
                 ])
                 writeToGoogleSheets();
