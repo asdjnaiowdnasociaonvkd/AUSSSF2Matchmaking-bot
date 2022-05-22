@@ -415,7 +415,7 @@ client.on('interactionCreate', async (interaction) => {
                     playerDataArray[player2DataArrayPosition][7] = parseInt(playerDataArray[player2DataArrayPosition][7]) + 1
                     playerDataArray[player2DataArrayPosition][9] = parseInt(playerDataArray[player2DataArrayPosition][9]) + 1
                 } else {
-                    matches.push([eval(playerDataArray[player1DataArrayPosition][3]), eval(playerDataArray[player2DataArrayPosition][3]), 1])
+                    matches.push([eval(playerDataArray[player1DataArrayPosition][3]), eval(playerDataArray[player2DataArrayPosition][3]), 0])
                     playerDataArray[player2DataArrayPosition][7] = parseInt(playerDataArray[player2DataArrayPosition][7]) + 1
                     playerDataArray[player2DataArrayPosition][8] = parseInt(playerDataArray[player2DataArrayPosition][8]) + 1
                     playerDataArray[player1DataArrayPosition][7] = parseInt(playerDataArray[player1DataArrayPosition][7]) + 1
