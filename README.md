@@ -3,3 +3,4 @@ So anyways i got tired of JSG constantly talking about a ranked matchmaking bot 
 You'll need the npm packages discord.js, glicko2, and googleapis.
 guildId will have to be replaced with the id of the guild you're using it for.
 bot token will have to be provided, as well as the google sheets credentials.
+Theres honestly a few other things I'd like to add, but I'll get around to those later
