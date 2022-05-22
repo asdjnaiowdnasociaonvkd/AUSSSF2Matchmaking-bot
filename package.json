@@ -1,0 +1,19 @@
+{
+  "name": "rankedmatchmakingbot",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@discordjs/rest": "^0.4.1",
+    "discord.js": "^13.6.0",
+    "glicko2": "^0.8.7",
+    "googleapi": "^1.0.2",
+    "googleapis": "^100.0.0"
+  },
+  "description": ""
+}
