@@ -6,7 +6,7 @@
 var glicko2 = require('glicko2');
 var settings = {
     //tau is just a constant
-    tau: 0.3,
+    tau: 0.5,
     //rating is the beginner rating
     rating: 1500,
     //rd is the beginner rating deviation- the smaller, the more confident we are on the rating
@@ -76,6 +76,7 @@ readFromGoogleSheets();
     const client = new Discord.Client({ intents: ['GUILD_MEMBERS','GUILD_MESSAGES', 'GUILD_MESSAGE_TYPING'] });
     const { SlashCommandBuilder } = require('@discordjs/builders');
     const { REST } = require('@discordjs/rest');
+const { Glicko2 } = require('./node_modules/glicko2/glicko2');
 
     //sets up global variables
     var player1Id;
@@ -239,6 +240,9 @@ client.on('interactionCreate', async (interaction) => {
                 '0'
             ]]
             writeToGoogleSheets();
+            for (i = 0; i < playerDataArray.length; i++) {
+                global[playerDataArray[i][3]] = ranking.makePlayer(playerDataArray[i][4], playerDataArray[i][5], playerDataArray[i][6])
+            }
             interaction.reply({
                 content: 'Registered!'
             })
@@ -275,21 +279,28 @@ client.on('interactionCreate', async (interaction) => {
                     newPlayer.getVol(),
                     //The next three numbers are for set wins, set losses and win rate- its just 0 because no games are played yet
                     '0',
+                    '0',
                     '0'
                 ])
                 writeToGoogleSheets();
                 interaction.reply({
                     content: 'Registered!'
                 })
+                global[playerDataArray[playerDataArray.length-1][3]] =  ranking.makePlayer(newPlayer.getRating(),newPlayer.getRd(),newPlayer.getVol())
             }
         }
     } else if (commandName === 'usernameupdate') {
         var playerID = await interaction.user.id
+        var oldName
         for (let i = 0; i < playerDataArray.length; i++) {
             if (playerDataArray[i][0] === playerID) {
                 playerDataArray[i][2] = (await client.users.fetch(playerID)).tag;
                 if (options.getString('ign') !== null) {
                     playerDataArray[i][3] = options.getString('ign')
+                    ranking = new glicko2.Glicko2(settings)
+                        for (i = 0; i < playerDataArray.length; i++) {
+        global[playerDataArray[i][3]] = ranking.makePlayer(playerDataArray[i][4], playerDataArray[i][5], playerDataArray[i][6])
+    }
                 }
             }
         }
@@ -341,10 +352,6 @@ client.on('interactionCreate', async (interaction) => {
         } else {
             if (isPlayer1Registered == false && isPlayer2Registered == false) {
                 interaction.reply('Neither player is registered!')
-                console.log(isPlayer1Registered)
-                console.log(isPlayer2Registered)
-                console.log(player1Id)
-                console.log(player2Id)
             } else if (isPlayer1Registered == false) {
                 interaction.reply((await client.users.fetch(player1Id)).username + ' is not registered!')
             } else {
@@ -450,8 +457,8 @@ client.on('interactionCreate', async (interaction) => {
             .setColor('#FF2D00')
             .setTitle('Leaderboard')
         for (let i = 0; i < leaderboardArray.length; i++) {
-            leaderboard.addField(i+1 + ". " + leaderboardArray[i][0], 'Rating: ' + leaderboardArray[i][1] +'\n' + 'RD: ' + leaderboardArray[i][2], true)
-        }        
+            leaderboard.addField(i + 1 + ". " + leaderboardArray[i][0], 'Rating: ' + leaderboardArray[i][1] + '\n' + 'RD: ' + leaderboardArray[i][2], true)
+        }
 
         interaction.reply({
             embeds: [leaderboard]
@@ -471,14 +478,14 @@ client.on('interactionCreate', async (interaction) => {
                 { name: 'IGN', value: playerDataArray[playerArrayPosition][3] },
                 { name: 'Rating', value: ((playerDataArray[playerArrayPosition][4]).toString()).substring(0, 8) },
                 { name: 'Deviation', value: ((playerDataArray[playerArrayPosition][5]).toString()).substring(0, 8) },
-                { name: 'volatility', value: ((playerDataArray[playerArrayPosition][6]).toString()).substring(0,8) },
+                { name: 'volatility', value: ((playerDataArray[playerArrayPosition][6]).toString()).substring(0, 8) },
                 { name: 'Wins', value: (playerDataArray[playerArrayPosition][7]).toString(), inline: true },
                 { name: 'Losses', value: (playerDataArray[playerArrayPosition][8]).toString(), inline: true },
                 { name: 'Win/Loss', value: (((playerDataArray[playerArrayPosition][7]) / (playerDataArray[playerArrayPosition][8])).toString()).substring(0, 8), inline: true }
 
-        )
+            )
         interaction.reply({
-embeds: [playerProfile]
+            embeds: [playerProfile]
         })
     }
     })
