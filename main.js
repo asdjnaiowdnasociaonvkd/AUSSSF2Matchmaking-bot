@@ -569,4 +569,4 @@ client.on('interactionCreate', async (interaction) => {
     })
 
     //do not share this ever- with this key, anyone can access the bot
-client.login('OTc0MjgxNDcwMzE3MzA1OTM2.GOAumn.Ih6hSzR4K33V9-0EIwJ_zr4An9bPFuPO4tWJUA');
+client.login(/*Discord token here*/);
