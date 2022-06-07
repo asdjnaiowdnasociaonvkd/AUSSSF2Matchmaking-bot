@@ -39,8 +39,9 @@ var ranking = new glicko2.Glicko2(settings);
 //id of the main spreadsheet
 const mainSpreadsheetId = '1bNpjgLWWK72OWLSxywotLa-izOJBOhF0wKVrUI_K37U';
 const sheets = google.sheets({ version: "v4", auth: googleClient })
-var playerDataArray = [];
-var matches = [];
+//player's data stored in these two
+var rawPlayerDataArray = [];
+var playerArray = []
 
 async function readFromGoogleSheets() {
 
@@ -49,20 +50,57 @@ async function readFromGoogleSheets() {
         spreadsheetId: mainSpreadsheetId,
         range: "DataSheet!A2:J"
     });
-    playerDataArray = playerDataOnSheets.data.values
+    rawPlayerDataArray = playerDataOnSheets.data.values
+    //sorts rawPlayerDataArray into a more readable format
+    function sortToPlayerArray(dataSet) {
+        playerArray.push(
+            {
+                discordID: dataSet[0],
+                dateAdded: dataSet[1],
+                discordName: dataSet[2],
+                IGN: dataSet[3],
+                currentRating: parseFloat(dataSet[4]),
+                currentDeviation: parseFloat(dataSet[5]),
+                currentViolatility: parseFloat(dataSet[6]),
+                gameCount: parseInt(dataSet[7]),
+                gamesWon: parseInt(dataSet[8]),
+                gamesLost: parseInt(dataSet[9]),
+                winLoss: parseInt(dataSet[8]) / parseInt(dataSet[8])
+            }
+        )
+    }
+    rawPlayerDataArray.forEach(sortToPlayerArray)
     //pulls data for the glicko 2 implementation
-    for (i = 0; i < playerDataArray.length; i++) {
-        global[playerDataArray[i][3]] = ranking.makePlayer(playerDataArray[i][4], playerDataArray[i][5], playerDataArray[i][6])
+    for (i = 0; i < playerArray.length; i++) {
+        global[playerArray[i].IGN] = ranking.makePlayer(playerArray[i].currentRating, playerArray[i].currentDeviation, playerArray[i].currentViolatility)
     }
 }
 
     //writes the player data down to sheets
 async function writeToGoogleSheets() {
+    rawPlayerDataArray = []
+    function sheetsUpdateData(dataGiven) {
+        rawPlayerDataArray.push(
+            [
+                dataGiven.discordID,
+                dataGiven.dateAdded,
+                dataGiven.discordName,
+                dataGiven.IGN,
+                dataGiven.currentRating,
+                dataGiven.currentDeviation,
+                dataGiven.currentViolatility,
+                dataGiven.gameCount,
+                dataGiven.gamesWon,
+                dataGiven.gamesLost
+            ]
+        )
+    }
+    playerArray.forEach(sheetsUpdateData)
     sheets.spreadsheets.values.update({
         spreadsheetId: mainSpreadsheetId,
         range: 'DataSheet!A2:J',
         valueInputOption: 'USER_ENTERED',
-        resource: { values: await playerDataArray }
+        resource: { values: await rawPlayerDataArray }
     })
     console.log('write complete!')
 }
@@ -72,22 +110,16 @@ readFromGoogleSheets();
 
 //initialises discord api and connects bot to discord
 
-    const Discord = require('discord.js');
-    const client = new Discord.Client({ intents: ['GUILD_MEMBERS','GUILD_MESSAGES', 'GUILD_MESSAGE_TYPING'] });
-    const { SlashCommandBuilder } = require('@discordjs/builders');
-    const { REST } = require('@discordjs/rest');
-const { Glicko2 } = require('./node_modules/glicko2/glicko2');
+const Discord = require('discord.js');
+const client = new Discord.Client({ intents: ['GUILD_MEMBERS','GUILD_MESSAGES', 'GUILD_MESSAGE_TYPING'] });
 
-    //sets up global variables
-    var player1Id;
+//sets up global variables
+var player1Id;
 var player2Id;
-var today = new Date()
 var gameList = new Array();
+var matches = [];
 
-for (let i = 0; i < playerDataArray.length; i++) {
-    playerDataArray[i]
-}
-
+//connecting to discord
     client.once('ready', () => {
         console.log('Discord connection successful');
 
@@ -212,45 +244,44 @@ client.on('interactionCreate', async (interaction) => {
     } else if (commandName === 'register') {
         //registers player to google sheets
         var playerID = await interaction.user.id
-
         //checks if player is already registered
         var isRegistered = new Boolean
-
-        if (playerDataArray == null) {
-            var newPlayer = ranking.makePlayer();
+            const today = new Date()
+        if (rawPlayerDataArray == null) {
             //adds a new player to the array
-            playerDataArray = [[
+            playerArray = [
+                {
                 //Discord ID
-                await playerID,
+                discordID: await playerID,
                 //Date
-                today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate(),
+                dateAdded: today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate(),
                 //Discord Tag(Name)
-                (await client.users.fetch(playerID)).tag,
+                discordName: (await client.users.fetch(playerID)).tag,
                 //In game name which was requested
-                options.getString('ingamename'),
+                IGN: options.getString('ingamename'),
                 //A new player's rating
-                newPlayer.getRating(),
+                currentRating: settings.rating,
                 //A new player's Deviation
-                newPlayer.getRd(),
+                currentDeviation: settings.rd,
                 //A new player's Volatility
-                newPlayer.getVol(),
-                //The next three numbers are for set wins, set losses and win rate- its just 0 because no games are played yet
-                '0',
-                '0',
-                '0'
-            ]]
+                currentViolatility: settings.vol,
+                //The next four numbers are for game count, set wins, set losses and win rate- its just 0 because no games are played yet
+                gameCount: 0,
+                gamesWon: 0,
+                gamesLost: 0,
+                winLoss: 0
+                }
+            ]
             writeToGoogleSheets();
-            for (i = 0; i < playerDataArray.length; i++) {
-                global[playerDataArray[i][3]] = ranking.makePlayer(playerDataArray[i][4], playerDataArray[i][5], playerDataArray[i][6])
-            }
+            global[eval[playerArray[0].IGN]] = ranking.makePlayer(playerArray[0].currentRating, playerArray[0].currentDeviation, playerArray[0].currentViolatility)
             interaction.reply({
                 content: 'Registered!'
             })
         } else {
 
             //updates ifRegisted with data on whether you are registered or not
-            for (let i = 0; i < playerDataArray.length; i++) {
-                if (playerDataArray[i][0] === playerID) {
+            for (let i = 0; i < playerArray.length; i++) {
+                if (playerArray[i].discordID === playerID) {
                     isRegistered = true
                     break
                 }
@@ -260,47 +291,48 @@ client.on('interactionCreate', async (interaction) => {
                 //take a wild guess at what this does
                 interaction.reply('You are already registered!')
             } else {
-                var newPlayer = ranking.makePlayer();
                 //adds a new player to the array
-                playerDataArray.push([
+                playerArray.push(
+                    {
                     //Discord ID
-                    await playerID,
+                    discordID: await playerID,
                     //Date
-                    today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate(),
+                    dateAdded: today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate(),
                     //Discord Tag(Name)
-                    (await client.users.fetch(playerID)).tag,
+                    discordName: (await client.users.fetch(playerID)).tag,
                     //In game name which was requested
-                    options.getString('ingamename'),
+                    IGN: options.getString('ingamename'),
                     //A new player's rating
-                    newPlayer.getRating(),
+                    currentRating: settings.rating,
                     //A new player's Deviation
-                    newPlayer.getRd(),
+                    currentDeviation: settings.rd,
                     //A new player's Volatility
-                    newPlayer.getVol(),
-                    //The next three numbers are for set wins, set losses and win rate- its just 0 because no games are played yet
-                    '0',
-                    '0',
-                    '0'
-                ])
+                    currentViolatility: settings.vol,
+                    //The next four numbers are for game count, set wins, set losses and win rate- its just 0 because no games are played yet
+                    gameCount: 0,
+                    gamesWon: 0,
+                    gamesLost: 0,
+                    winLoss: 0
+                }
+                )
                 writeToGoogleSheets();
+                global[eval[playerArray[playerArray.length - 1].IGN]] = ranking.makePlayer(playerArray[playerArray.length - 1].currentRating, playerArray[playerArray.length - 1].currentDeviation, playerArray[playerArray.length - 1].currentViolatility)
                 interaction.reply({
                     content: 'Registered!'
                 })
-                global[playerDataArray[playerDataArray.length-1][3]] =  ranking.makePlayer(newPlayer.getRating(),newPlayer.getRd(),newPlayer.getVol())
             }
         }
     } else if (commandName === 'usernameupdate') {
         var playerID = await interaction.user.id
-        var oldName
-        for (let i = 0; i < playerDataArray.length; i++) {
-            if (playerDataArray[i][0] === playerID) {
-                playerDataArray[i][2] = (await client.users.fetch(playerID)).tag;
+        for (let i = 0; i < playerArray.length; i++) {
+            if (playerArray[i].discordID === playerID) {
+                playerArray[i].discordName = (await client.users.fetch(playerID)).tag;
                 if (options.getString('ign') !== null) {
-                    playerDataArray[i][3] = options.getString('ign')
+                    playerArray[i].IGN = options.getString('ign')
                     ranking = new glicko2.Glicko2(settings)
-                        for (i = 0; i < playerDataArray.length; i++) {
-        global[playerDataArray[i][3]] = ranking.makePlayer(playerDataArray[i][4], playerDataArray[i][5], playerDataArray[i][6])
-    }
+                    for (i = 0; i < playerArray.length; i++) {
+                        global[playerArray[i].IGN] = ranking.makePlayer(playerArray[i].currentRating, playerArray[i].currentDeviation, playerArray[i].currentViolatility)
+                    }
                 }
             }
         }
@@ -313,14 +345,14 @@ client.on('interactionCreate', async (interaction) => {
         player2Id = (options.getMember('playertwo')).id
         var isPlayer1Registered = false;
         var isPlayer2Registered = false;
-        for (let i = 0; i < playerDataArray.length; i++) {
-            if (playerDataArray[i][0] === player1Id) {
+        for (let i = 0; i < playerArray.length; i++) {
+            if (playerArray[i].discordID === player1Id) {
                 isPlayer1Registered = true
                 break
             }
         }
-        for (let i = 0; i < playerDataArray.length; i++) {
-            if (playerDataArray[i][0] === player2Id) {
+        for (let i = 0; i < playerArray.length; i++) {
+            if (playerArray[i].discordID === player2Id) {
                 isPlayer2Registered = true
                 break
             }
@@ -386,7 +418,7 @@ client.on('interactionCreate', async (interaction) => {
         if (gameList.length > 0) {
             var areBothPlayersInTheSameGame = false;
             var gameListPosition
-            for (let i = 0; i < playerDataArray.length; i++) {
+            for (let i = 0; i < playerArray.length; i++) {
                 if (((gameList[i][0] === player1Id) || (gameList[i][1] === player1Id)) && ((gameList[i][0] === player2Id) || (gameList[i][1] === player2Id))) {
                     areBothPlayersInTheSameGame = true
                     gameListPosition = i
@@ -400,43 +432,43 @@ client.on('interactionCreate', async (interaction) => {
                     content: 'You are in different games!'
                 })
             } else {
-                var player1DataArrayPosition
-                var player2DataArrayPosition
-                for (let i = 0; i < playerDataArray.length; i++) {
-                    if (playerDataArray[i][0] === player1Id) {
-                        player1DataArrayPosition = i
+                var p1Pos
+                var p2Pos
+                for (let i = 0; i < playerArray.length; i++) {
+                    if (playerArray[i].discordID === player1Id) {
+                        p1Pos = i
                         break
                     }
                 }
-                for (let i = 0; i < playerDataArray.length; i++) {
-                    if (playerDataArray[i][0] === player2Id) {
-                        player2DataArrayPosition = i
+                for (let i = 0; i < rawPlayerDataArray.length; i++) {
+                    if (playerArray[i].discordID === player2Id) {
+                        p2Pos = i
                         break
                     }
                 }
                 if (winningPlayerId == player1Id) {
-                    matches.push([eval(playerDataArray[player1DataArrayPosition][3]), eval(playerDataArray[player2DataArrayPosition][3]), 1])
-                    playerDataArray[player1DataArrayPosition][7] = parseInt(playerDataArray[player1DataArrayPosition][7]) + 1
-                    playerDataArray[player1DataArrayPosition][8] = parseInt(playerDataArray[player1DataArrayPosition][8]) + 1
-                    playerDataArray[player2DataArrayPosition][7] = parseInt(playerDataArray[player2DataArrayPosition][7]) + 1
-                    playerDataArray[player2DataArrayPosition][9] = parseInt(playerDataArray[player2DataArrayPosition][9]) + 1
+                    matches.push([eval(playerArray[p1Pos].IGN), eval(playerArray[p2Pos].IGN), 1])
+                    playerArray[p1Pos].gameCount += 1
+                    playerArray[p1Pos].gamesWon += 1
+                    playerArray[p2Pos].gameCount += 1
+                    playerArray[p2Pos].gamesLost += 1
                 } else {
-                    matches.push([eval(playerDataArray[player1DataArrayPosition][3]), eval(playerDataArray[player2DataArrayPosition][3]), 0])
-                    playerDataArray[player2DataArrayPosition][7] = parseInt(playerDataArray[player2DataArrayPosition][7]) + 1
-                    playerDataArray[player2DataArrayPosition][8] = parseInt(playerDataArray[player2DataArrayPosition][8]) + 1
-                    playerDataArray[player1DataArrayPosition][7] = parseInt(playerDataArray[player1DataArrayPosition][7]) + 1
-                    playerDataArray[player1DataArrayPosition][9] = parseInt(playerDataArray[player1DataArrayPosition][9]) + 1
+                    matches.push([eval(playerArray[p1Pos].IGN), eval(playerArray[p2Pos].IGN), 0])
+                    playerArray[p2Pos].gameCount += 1
+                    playerArray[p2Pos].gamesWon += 1
+                    playerArray[p1Pos].gameCount += 1
+                    playerArray[p1Pos].gamesLost += 1
                 }
                 interaction.reply({
                     content: 'match recorded!'
                 })
                 ranking.updateRatings(matches)
-                playerDataArray[player1DataArrayPosition][4] = eval(playerDataArray[player1DataArrayPosition][3]).getRating()
-                playerDataArray[player1DataArrayPosition][5] = eval(playerDataArray[player1DataArrayPosition][3]).getRd()
-                playerDataArray[player1DataArrayPosition][6] = eval(playerDataArray[player1DataArrayPosition][3]).getVol()
-                playerDataArray[player2DataArrayPosition][4] = eval(playerDataArray[player2DataArrayPosition][3]).getRating()
-                playerDataArray[player2DataArrayPosition][5] = eval(playerDataArray[player2DataArrayPosition][3]).getRd()
-                playerDataArray[player2DataArrayPosition][6] = eval(playerDataArray[player2DataArrayPosition][3]).getVol()
+                playerArray[p1Pos].currentRating = eval(playerArray[p1Pos].IGN).getRating()
+                playerArray[p1Pos].currentDeviation = eval(playerArray[p1Pos].IGN).getRd()
+                playerArray[p1Pos].currentViolatility = eval(playerArray[p1Pos].IGN).getVol()
+                playerArray[p2Pos].currentRating = eval(playerArray[p2Pos].IGN).getRating()
+                playerArray[p2Pos].currentDeviation = eval(playerArray[p2Pos].IGN).getRd()
+                playerArray[p2Pos].currentViolatility = eval(playerArray[p2Pos].IGN).getVol()
                 gameList.splice(gameListPosition)
                 writeToGoogleSheets()
             }
@@ -446,42 +478,88 @@ client.on('interactionCreate', async (interaction) => {
             })
         }
     } else if (commandName === 'leaderboard') {
+        //this is a work in progress- i'll have to get more work done to expand this
         var leaderboardArray = []
-        const maxPlayersPerPage = 10
-        for (let i = 0; i < playerDataArray.length; i++) {
-            leaderboardArray.push([playerDataArray[i][2], playerDataArray[i][4], playerDataArray[i][5]])
+        for (let i = 0; i < playerArray.length; i++) {
+            leaderboardArray.push(
+                {
+                    name: playerArray[i].discordName,
+                    leaderboardRating: playerArray[i].currentRating,
+                    leaderboardRd: playerArray[i].currentDeviation
+                }
+            )
         }
-        leaderboardArray.sort(function (a, b) { return a[1] < b[1] })
+        function compare(a, b) {
+            if (a.leaderboardRating > b.leaderboardRating) {
+                return -1;
+            }
+            if (a.leaderboardRating < b.leaderboardRating) {
+                return 1;
+            }
+            return 0;
+        }
+
+        leaderboardArray.sort(compare);
         console.log(leaderboardArray)
         const leaderboard = new Discord.MessageEmbed()
             .setColor('#FF2D00')
             .setTitle('Leaderboard')
         for (let i = 0; i < leaderboardArray.length; i++) {
-            leaderboard.addField(i + 1 + ". " + leaderboardArray[i][0], 'Rating: ' + leaderboardArray[i][1] + '\n' + 'RD: ' + leaderboardArray[i][2], true)
+            leaderboard.addField(i + 1 + ". " + leaderboardArray[i].name, 'Rating: ' + leaderboardArray[i].leaderboardRating.toFixed(3) + '\n' + 'RD: ' + leaderboardArray[i].leaderboardRd.toFixed(3), true)
         }
 
         interaction.reply({
             embeds: [leaderboard]
         })
     } else if (commandName === 'profile') {
-        var playerArrayPosition
-        for (let i = 0; i < playerDataArray.length; i++) {
-            if (playerDataArray[i][0] === await interaction.user.id) {
-                playerArrayPosition = i
+        //another work in progress, although this is more with the embed- i'll add rank later
+        var playerPos
+        var rank
+        var leaderboardArray=[]
+        for (let i = 0; i < playerArray.length; i++) {
+            leaderboardArray.push(
+                {
+                    name: playerArray[i].discordName,
+                    leaderboardRating: playerArray[i].currentRating,
+                    leaderboardRd: playerArray[i].currentDeviation
+                }
+            )
+        }
+        function compare(a, b) {
+            if (a.leaderboardRating > b.leaderboardRating) {
+                return -1;
+            }
+            if (a.leaderboardRating < b.leaderboardRating) {
+                return 1;
+            }
+            return 0;
+        }
+        for (let i = 0; i < playerArray.length; i++) {
+            if (playerArray[i].discordID === await interaction.user.id) {
+                playerPos = i
+                break
+            }
+        }
+        leaderboardArray.sort(compare);
+        for (let i = 0; i < leaderboardArray.length; i++) {
+            if (leaderboardArray[i].name === playerArray[playerPos].discordName) {
+                rank = i + 1
                 break
             }
         }
         const playerProfile = new Discord.MessageEmbed()
+            .setThumbnail(await interaction.user.avatarURL())
             .setColor('#0000FF')
             .setTitle(await interaction.user.username + "'s profile")
             .addFields(
-                { name: 'IGN', value: playerDataArray[playerArrayPosition][3] },
-                { name: 'Rating', value: ((playerDataArray[playerArrayPosition][4]).toString()).substring(0, 8) },
-                { name: 'Deviation', value: ((playerDataArray[playerArrayPosition][5]).toString()).substring(0, 8) },
-                { name: 'volatility', value: ((playerDataArray[playerArrayPosition][6]).toString()).substring(0, 8) },
-                { name: 'Wins', value: (playerDataArray[playerArrayPosition][7]).toString(), inline: true },
-                { name: 'Losses', value: (playerDataArray[playerArrayPosition][8]).toString(), inline: true },
-                { name: 'Win/Loss', value: (((playerDataArray[playerArrayPosition][7]) / (playerDataArray[playerArrayPosition][8])).toString()).substring(0, 8), inline: true }
+                { name: 'IGN', value: playerArray[playerPos].discordName },
+                { name: 'Rank', value: rank.toString()},
+                { name: 'Rating', value: playerArray[playerPos].currentRating.toFixed(3).toString() },
+                { name: 'Deviation', value: playerArray[playerPos].currentDeviation.toFixed(3).toString() },
+                { name: 'volatility', value: playerArray[playerPos].currentViolatility.toFixed(3).toString() },
+                { name: 'Wins', value: (playerArray[playerPos].gamesWon).toString(), inline: true },
+                { name: 'Losses', value: (playerArray[playerPos].gamesLost).toString(), inline: true },
+                { name: 'Win/Loss', value: (playerArray[playerPos].gamesWon / playerArray[playerPos].gamesLost).toFixed(2).toString(), inline: true }
 
             )
         interaction.reply({
@@ -491,4 +569,4 @@ client.on('interactionCreate', async (interaction) => {
     })
 
     //do not share this ever- with this key, anyone can access the bot
-    client.login(/* replace this comment with discord key */);
+client.login('OTc0MjgxNDcwMzE3MzA1OTM2.GOAumn.Ih6hSzR4K33V9-0EIwJ_zr4An9bPFuPO4tWJUA');
