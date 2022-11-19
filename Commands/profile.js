@@ -54,15 +54,15 @@ module.exports = {
 		if (isReg) {
 			//setting up characters they play
 
-				mains = sheetsDataProcessing.playerData[userPosition].playerMains.split(",")
+				mains = sheetsDataProcessing.playerData[userPosition].playerMains.split(", ")
 				for (char in mains) {
 					mainChars += charToKeys[mains[char]]
                 }
-				secondaries = sheetsDataProcessing.playerData[userPosition].playerSecondaries.split(",")
+				secondaries = sheetsDataProcessing.playerData[userPosition].playerSecondaries.split(", ")
 				for (char in secondaries) {
 					secondaryChars += charToKeys[secondaries[char]]
 				}
-				pockets = sheetsDataProcessing.playerData[userPosition].playerPocket.split(",")
+				pockets = sheetsDataProcessing.playerData[userPosition].playerPocket.split(", ")
 				for (char in pockets) {
 					pocketChars += charToKeys[pockets[char]]
 				}
@@ -70,7 +70,7 @@ module.exports = {
 			if (parseInt(sheetsDataProcessing.playerData[userPosition].playerWins) + parseInt(sheetsDataProcessing.playerData[userPosition].playerLosses) == 0) {
 				winRate = "No games played."
 			} else {
-				winRate = (Math.ceil((parseInt(sheetsDataProcessing.playerData[userPosition].playerWins) / (parseInt(sheetsDataProcessing.playerData[userPosition].playerWins) + parseInt(sheetsDataProcessing.playerData[userPosition].playerLosses)))*100))
+				winRate = (Math.ceil((parseInt(sheetsDataProcessing.playerData[userPosition].playerWins) / (parseInt(sheetsDataProcessing.playerData[userPosition].playerWins) + parseInt(sheetsDataProcessing.playerData[userPosition].playerLosses)))*100)) + "%"
 			}
 
 			if (parseInt(sheetsDataProcessing.playerData[userPosition].playerWins) + parseInt(sheetsDataProcessing.playerData[userPosition].playerLosses) > 5) {
@@ -85,7 +85,7 @@ module.exports = {
 				.addFields(	
 					{ name: "Characters", value: "**Mains: **" + mainChars + " \n **Secondaries: **" + secondaryChars + " \n **Pockets: **" + pocketChars, inline: true },
 					{ name: "\u200B", value: "\u200B", inline: true },
-					{ name: "Statistics", value: "**Win Rate: **" + winRate + "%" + "\n **Current Rating: **" + sheetsDataProcessing.playerData[userPosition].playerRating + "\n **Hightest Rating: **" + highestRating, inline: true },
+					{ name: "Statistics", value: "**Win Rate: **" + winRate + "\n **Current Rating: **" + sheetsDataProcessing.playerData[userPosition].playerRating + "\n **Hightest Rating: **" + highestRating, inline: true },
 			)
 			await interaction.reply({ embeds: [profileEmbed] });
 		} else if (interaction.user.id != await target) {

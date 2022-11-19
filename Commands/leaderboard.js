@@ -13,8 +13,6 @@ module.exports = {
 		const filter = i => i.user.id === interaction.user.id;
 		const collector = interaction.channel.createMessageComponentCollector({ filter, time: 15000 });
 		var leaderboardEligible = new Array
-		var leftText = ""
-		var rightText = ""
 		var index = 1
 		var pages = new Number
 		var leaderboardText = new Array
@@ -68,40 +66,41 @@ module.exports = {
 			interaction.reply({embeds: [await generateEmbed()]})
 		} else {
 			interaction.reply({embeds:[await generateEmbed()], components:[rightButton]})
-        }
+		}
 
-		collector.on('collect', async i => {
-			if (i.customId == 'back') {
-				index--
-				console.log(index)
-			} else if (i.customId == 'next'){
-				index++
-				console.log(index)
-			}
+			collector.on('collect', async i => {
+				if (i.customId == 'back') {
+					index--
+					console.log(index)
+				} else if (i.customId == 'next') {
+					index++
+					console.log(index)
+				}
 
-			if (index == pages) {
-				await i.update({
-					embeds: [await generateEmbed()],
-					components: [leftButton]
-				})
-			} else if (index == 1) {
-				await i.update({
-					embeds: [await generateEmbed()],
-					components: [rightButton]
-				})
-			} else {
-				await i.update({
-					embeds: [await generateEmbed()],
-					components: [leftButton, rightButton]
-				})
-				console.log(index)
-            }
-        })
+				if (index == pages) {
+					await i.update({
+						embeds: [await generateEmbed()],
+						components: [leftButton]
+					})
+				} else if (index == 1) {
+					await i.update({
+						embeds: [await generateEmbed()],
+						components: [rightButton]
+					})
+				} else {
+					await i.update({
+						embeds: [await generateEmbed()],
+						components: [leftButton, rightButton]
+					})
+					console.log(index)
+				}
+			})
 
 		async function timeout() {
 			await interaction.editReply({
 				content: "Timeout!",
-				embeds: [await generateEmbed()]
+				embeds: [await generateEmbed()],
+				components: []
 			})
         }
 

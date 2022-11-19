@@ -5,7 +5,7 @@ const sheetsDataProcessing = require('./../sheetsDataProcessing.js')
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('register')
-		.setDescription('Register your username here')
+		.setDescription('Register your username here. This cannot be changed!')
 		.addStringOption(option =>
 			option.setName('username')
 				.setDescription('Your username')
@@ -34,18 +34,16 @@ module.exports = {
 				"playerVol": "0.6",
 				"playerWins": 0,
 				"playerLosses": 0,
-				"playerMains": null,
-				"playerSecondaries": null,
-				"playerPocket": null,
+				"playerMains": "None",
+				"playerSecondaries": "None",
+				"playerPocket": "None",
 				"playerMax": "1200"
 			})
 
 			sheetsDataProcessing.writeToSheets()
 
-			global[eval[interaction.options.getString("username")]] = sheetsDataProcessing.ranking.makePlayer()
-
 			interaction.reply("Registered!")
-        }
+		}
 
 	},
 };
