@@ -21,20 +21,6 @@ const keys = require('./googleAPICredentials.json');
 
 const sheets = google.sheets({ version: "v4", auth: googleClient })
 
-//initialise glicko 2
-var glicko2 = require('glicko2');
-var settings = {
-    //tau is just a constant
-    tau: 0.5,
-    //rating is the beginner rating
-    rating: 1500,
-    //rd is the beginner rating deviation- the smaller, the more confident we are on the rating
-    rd: 350,
-    //vol is default volatility- expected fluctuation
-    vol: 0.06
-};
-var ranking = new glicko2.Glicko2(settings);
-
 //pulls all data on sheets
 
 async function getData() {
@@ -75,6 +61,16 @@ async function writeToSheets() {
         })
 }
 
+async function recordMatch(name1, rating1, rating1Change, name2, rating2, rating2Change, winner) {
+    const date = new Date()
+    var matchLog = [[date, name1, rating1, rating1Change, name2, rating2, rating2Change, winner]]
+    sheets.spreadsheets.values.append({
+        spreadsheetId: "1bNpjgLWWK72OWLSxywotLa-izOJBOhF0wKVrUI_K37U",
+        range: "Match_Records!A2:H",
+        valueInputOption: "USER_ENTERED",
+        resource: { values: await matchLog }
+    })
+}
 
 //sorts data into objects
 async function sortData() {
@@ -95,20 +91,12 @@ async function sortData() {
     }
 }
 
-//passing the data to the glicko 2 module
-async function glickoSetup() {
-    for (player in playerData) {
-        //note that players are identified by their discord ID, rather than a username
-        global[eval[playerData[player].playerID]] = ranking.makePlayer(playerData[player].playerRating, playerData[player].playerDev, playerData[player].playerVol)
-    }
-}
-
-getData().then(sortData).then(glickoSetup)
+getData().then(sortData)
 
 //push playerdata out
 module.exports = {
     playerData,
     rawData,
-    ranking,
-    writeToSheets
+    writeToSheets,
+    recordMatch
 }

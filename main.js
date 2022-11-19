@@ -65,3 +65,20 @@ client.on(Events.InteractionCreate, async interaction => {
         await interaction.reply({ content: "There has been an error- try again", ephemeral: true });
     }
 });
+
+client.on('interactionCreate', async interaction => {
+    if (interaction.isAutocomplete()) {
+        const command = interaction.client.commands.get(interaction.commandName);
+
+        if (!command) {
+            console.error(`No command matching ${interaction.commandName} was found.`);
+            return;
+        }
+
+        try {
+            await command.autocomplete(interaction);
+        } catch (error) {
+            console.error(error);
+        }
+    }
+});
